@@ -1,0 +1,546 @@
+
+Discarded input sections
+
+ .group         0x00000000        0xc build-test/src/board.o
+ .group         0x00000000        0xc build-test/src/board.o
+ .group         0x00000000        0xc build-test/src/board.o
+ .text          0x00000000        0x0 build-test/src/board.o
+ .data          0x00000000        0x0 build-test/src/board.o
+ .bss           0x00000000        0x0 build-test/src/board.o
+ .text.board_led_toggle
+                0x00000000       0x1c build-test/src/board.o
+ .text.board_button_init
+                0x00000000       0x5c build-test/src/board.o
+ .text.board_button_pressed
+                0x00000000       0x10 build-test/src/board.o
+ .text.board_button_clear_irq
+                0x00000000       0x10 build-test/src/board.o
+ .group         0x00000000        0xc build-test/src/kprintf.o
+ .group         0x00000000        0xc build-test/src/kprintf.o
+ .group         0x00000000        0xc build-test/src/kprintf.o
+ .text          0x00000000        0x0 build-test/src/kprintf.o
+ .data          0x00000000        0x0 build-test/src/kprintf.o
+ .bss           0x00000000        0x0 build-test/src/kprintf.o
+ .debug_macro   0x00000000      0xae4 build-test/src/kprintf.o
+ .debug_macro   0x00000000      0x34e build-test/src/kprintf.o
+ .group         0x00000000        0xc build-test/src/libmin.o
+ .group         0x00000000        0xc build-test/src/libmin.o
+ .text          0x00000000        0x0 build-test/src/libmin.o
+ .data          0x00000000        0x0 build-test/src/libmin.o
+ .bss           0x00000000        0x0 build-test/src/libmin.o
+ .text.memset   0x00000000       0x14 build-test/src/libmin.o
+ .text.memcpy   0x00000000       0x14 build-test/src/libmin.o
+ .debug_info    0x00000000      0x13b build-test/src/libmin.o
+ .debug_abbrev  0x00000000       0xcd build-test/src/libmin.o
+ .debug_loclists
+                0x00000000       0xe2 build-test/src/libmin.o
+ .debug_aranges
+                0x00000000       0x28 build-test/src/libmin.o
+ .debug_rnglists
+                0x00000000       0x19 build-test/src/libmin.o
+ .debug_macro   0x00000000       0x1a build-test/src/libmin.o
+ .debug_macro   0x00000000      0xae4 build-test/src/libmin.o
+ .debug_macro   0x00000000      0x190 build-test/src/libmin.o
+ .debug_line    0x00000000      0x146 build-test/src/libmin.o
+ .debug_str     0x00000000     0x3216 build-test/src/libmin.o
+ .comment       0x00000000       0x46 build-test/src/libmin.o
+ .debug_frame   0x00000000       0x30 build-test/src/libmin.o
+ .ARM.attributes
+                0x00000000       0x32 build-test/src/libmin.o
+ .group         0x00000000        0xc build-test/src/system.o
+ .group         0x00000000        0xc build-test/src/system.o
+ .group         0x00000000        0xc build-test/src/system.o
+ .text          0x00000000        0x0 build-test/src/system.o
+ .data          0x00000000        0x0 build-test/src/system.o
+ .bss           0x00000000        0x0 build-test/src/system.o
+ .debug_macro   0x00000000      0xae4 build-test/src/system.o
+ .debug_macro   0x00000000      0x34e build-test/src/system.o
+ .debug_macro   0x00000000      0x160 build-test/src/system.o
+ .group         0x00000000        0xc build-test/src/uart.o
+ .group         0x00000000        0xc build-test/src/uart.o
+ .group         0x00000000        0xc build-test/src/uart.o
+ .text          0x00000000        0x0 build-test/src/uart.o
+ .data          0x00000000        0x0 build-test/src/uart.o
+ .bss           0x00000000        0x0 build-test/src/uart.o
+ .text.uart_write
+                0x00000000       0x20 build-test/src/uart.o
+ .debug_macro   0x00000000      0xae4 build-test/src/uart.o
+ .debug_macro   0x00000000      0x34e build-test/src/uart.o
+ .debug_macro   0x00000000      0x160 build-test/src/uart.o
+ .group         0x00000000        0xc build-test/src/kernel/fault.o
+ .group         0x00000000        0xc build-test/src/kernel/fault.o
+ .group         0x00000000        0xc build-test/src/kernel/fault.o
+ .group         0x00000000        0xc build-test/src/kernel/fault.o
+ .group         0x00000000        0xc build-test/src/kernel/fault.o
+ .text          0x00000000        0x0 build-test/src/kernel/fault.o
+ .data          0x00000000        0x0 build-test/src/kernel/fault.o
+ .bss           0x00000000        0x0 build-test/src/kernel/fault.o
+ .debug_macro   0x00000000      0xae4 build-test/src/kernel/fault.o
+ .debug_macro   0x00000000      0x34e build-test/src/kernel/fault.o
+ .debug_macro   0x00000000      0x160 build-test/src/kernel/fault.o
+ .debug_macro   0x00000000       0x58 build-test/src/kernel/fault.o
+ .group         0x00000000        0xc build-test/src/kernel/kernel.o
+ .group         0x00000000        0xc build-test/src/kernel/kernel.o
+ .group         0x00000000        0xc build-test/src/kernel/kernel.o
+ .group         0x00000000        0xc build-test/src/kernel/kernel.o
+ .group         0x00000000        0xc build-test/src/kernel/kernel.o
+ .text          0x00000000        0x0 build-test/src/kernel/kernel.o
+ .data          0x00000000        0x0 build-test/src/kernel/kernel.o
+ .bss           0x00000000        0x0 build-test/src/kernel/kernel.o
+ .text.k_in_isr
+                0x00000000        0x8 build-test/src/kernel/kernel.o
+ .text.k_task_registry
+                0x00000000        0xc build-test/src/kernel/kernel.o
+ .text.k_stack_high_water
+                0x00000000       0x2c build-test/src/kernel/kernel.o
+ .debug_macro   0x00000000      0xae4 build-test/src/kernel/kernel.o
+ .debug_macro   0x00000000      0x34e build-test/src/kernel/kernel.o
+ .debug_macro   0x00000000       0x34 build-test/src/kernel/kernel.o
+ .debug_macro   0x00000000      0x160 build-test/src/kernel/kernel.o
+ .debug_macro   0x00000000       0x58 build-test/src/kernel/kernel.o
+ .group         0x00000000        0xc build-test/src/kernel/sem.o
+ .group         0x00000000        0xc build-test/src/kernel/sem.o
+ .group         0x00000000        0xc build-test/src/kernel/sem.o
+ .text          0x00000000        0x0 build-test/src/kernel/sem.o
+ .data          0x00000000        0x0 build-test/src/kernel/sem.o
+ .bss           0x00000000        0x0 build-test/src/kernel/sem.o
+ .text.k_sem_try_take
+                0x00000000       0x24 build-test/src/kernel/sem.o
+ .debug_macro   0x00000000      0xae4 build-test/src/kernel/sem.o
+ .debug_macro   0x00000000      0x34e build-test/src/kernel/sem.o
+ .debug_macro   0x00000000       0x34 build-test/src/kernel/sem.o
+ .group         0x00000000        0xc build-test/app/app_test.o
+ .group         0x00000000        0xc build-test/app/app_test.o
+ .group         0x00000000        0xc build-test/app/app_test.o
+ .group         0x00000000        0xc build-test/app/app_test.o
+ .group         0x00000000        0xc build-test/app/app_test.o
+ .text          0x00000000        0x0 build-test/app/app_test.o
+ .data          0x00000000        0x0 build-test/app/app_test.o
+ .bss           0x00000000        0x0 build-test/app/app_test.o
+ .debug_macro   0x00000000      0xae4 build-test/app/app_test.o
+ .debug_macro   0x00000000      0x34e build-test/app/app_test.o
+ .debug_macro   0x00000000      0x160 build-test/app/app_test.o
+ .debug_macro   0x00000000       0x58 build-test/app/app_test.o
+ .debug_macro   0x00000000       0x34 build-test/app/app_test.o
+ .data          0x00000000        0x0 build-test/src/startup.o
+ .bss           0x00000000        0x0 build-test/src/startup.o
+ .data          0x00000000        0x0 build-test/src/kernel/port.o
+ .bss           0x00000000        0x0 build-test/src/kernel/port.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x08000000         0x00100000         xr
+DTCM             0x20000000         0x00020000         xrw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD build-test/src/board.o
+LOAD build-test/src/kprintf.o
+LOAD build-test/src/libmin.o
+LOAD build-test/src/system.o
+LOAD build-test/src/uart.o
+LOAD build-test/src/kernel/fault.o
+LOAD build-test/src/kernel/kernel.o
+LOAD build-test/src/kernel/sem.o
+LOAD build-test/app/app_test.o
+LOAD build-test/src/startup.o
+LOAD build-test/src/kernel/port.o
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+dp/hard\libgcc.a
+                0x20020000                        _estack = (ORIGIN (DTCM) + LENGTH (DTCM))
+
+.vectors        0x08000000      0x298
+ *(.vectors)
+ .vectors       0x08000000      0x298 build-test/src/startup.o
+                0x08000000                g_vectors
+
+.text           0x08000298     0x16ac
+ *(.text*)
+ .text.board_init
+                0x08000298       0x58 build-test/src/board.o
+                0x08000298                board_init
+ .text.board_led
+                0x080002f0       0x1c build-test/src/board.o
+                0x080002f0                board_led
+ .text.out_num  0x0800030c       0x9c build-test/src/kprintf.o
+ .text.kvprintf
+                0x080003a8      0x124 build-test/src/kprintf.o
+                0x080003a8                kvprintf
+ .text.kprintf  0x080004cc       0x1c build-test/src/kprintf.o
+                0x080004cc                kprintf
+ .text.system_init
+                0x080004e8       0x30 build-test/src/system.o
+                0x080004e8                system_init
+ .text.uart_init
+                0x08000518       0x60 build-test/src/uart.o
+                0x08000518                uart_init
+ .text.uart_putc
+                0x08000578       0x10 build-test/src/uart.o
+                0x08000578                uart_putc
+ .text.uart_flush
+                0x08000588       0x10 build-test/src/uart.o
+                0x08000588                uart_flush
+ .text.k_fault_dump
+                0x08000598       0x8c build-test/src/kernel/fault.o
+                0x08000598                k_fault_dump
+ .text.task_exit_trap
+                0x08000624       0x34 build-test/src/kernel/kernel.o
+ .text.idle_body
+                0x08000658        0x4 build-test/src/kernel/kernel.o
+ .text.k_crit_enter
+                0x0800065c       0x10 build-test/src/kernel/kernel.o
+                0x0800065c                k_crit_enter
+ .text.k_crit_exit
+                0x0800066c        0x8 build-test/src/kernel/kernel.o
+                0x0800066c                k_crit_exit
+ .text.k_pend_switch
+                0x08000674       0x10 build-test/src/kernel/kernel.o
+                0x08000674                k_pend_switch
+ .text.k_ready_locked
+                0x08000684       0x40 build-test/src/kernel/kernel.o
+                0x08000684                k_ready_locked
+ .text.k_task_create
+                0x080006c4       0xe4 build-test/src/kernel/kernel.o
+                0x080006c4                k_task_create
+ .text.k_start  0x080007a8       0xb8 build-test/src/kernel/kernel.o
+                0x080007a8                k_start
+ .text.SysTick_Handler
+                0x08000860       0xc0 build-test/src/kernel/kernel.o
+                0x08000860                SysTick_Handler
+ .text.k_now    0x08000920        0xc build-test/src/kernel/kernel.o
+                0x08000920                k_now
+ .text.k_sleep_ms
+                0x0800092c       0x68 build-test/src/kernel/kernel.o
+                0x0800092c                k_sleep_ms
+ .text.k_yield  0x08000994       0x20 build-test/src/kernel/kernel.o
+                0x08000994                k_yield
+ .text.k_panic  0x080009b4       0x3c build-test/src/kernel/kernel.o
+                0x080009b4                k_panic
+ .text.k_switch_context
+                0x080009f0       0xac build-test/src/kernel/kernel.o
+                0x080009f0                k_switch_context
+ .text.k_sem_init
+                0x08000a9c        0x8 build-test/src/kernel/sem.o
+                0x08000a9c                k_sem_init
+ .text.k_sem_take
+                0x08000aa4       0x54 build-test/src/kernel/sem.o
+                0x08000aa4                k_sem_take
+ .text.k_sem_give
+                0x08000af8       0x50 build-test/src/kernel/sem.o
+                0x08000af8                k_sem_give
+ .text.rr_body  0x08000b48       0x24 build-test/app/app_test.o
+ .text.f_body   0x08000b6c      0x1c8 build-test/app/app_test.o
+ .text.verdict  0x08000d34       0x3c build-test/app/app_test.o
+ .text.victim_body
+                0x08000d70       0x24 build-test/app/app_test.o
+ .text.producer_body
+                0x08000d94       0x28 build-test/app/app_test.o
+ .text.hi_body  0x08000dbc       0x28 build-test/app/app_test.o
+ .text.consumer_body
+                0x08000de4       0x30 build-test/app/app_test.o
+ .text.runner_body
+                0x08000e14      0x468 build-test/app/app_test.o
+ .text.startup.main
+                0x0800127c       0x48 build-test/app/app_test.o
+                0x0800127c                main
+ .text          0x080012c4       0x64 build-test/src/startup.o
+                0x080012c4                Reset_Handler
+                0x0800130a                UsageFault_Handler
+                0x0800130a                USART3_IRQHandler
+                0x0800130a                NMI_Handler
+                0x0800130a                EXTI15_10_IRQHandler
+                0x0800130a                MemManage_Handler
+                0x0800130a                BusFault_Handler
+                0x0800130a                DebugMon_Handler
+ .text          0x08001328       0x88 build-test/src/kernel/port.o
+                0x08001328                SVC_Handler
+                0x08001342                PendSV_Handler
+                0x08001394                HardFault_Handler
+ *(.rodata*)
+ .rodata.leds   0x080013b0       0x18 build-test/src/board.o
+ .rodata.kvprintf.str1.4
+                0x080013c8      0x57a build-test/src/kprintf.o
+                                  0x7 (size before relaxing)
+ .rodata.k_fault_dump.str1.4
+                0x08001942       0xc4 build-test/src/kernel/fault.o
+ .rodata.k_start.str1.4
+                0x08001942        0x5 build-test/src/kernel/kernel.o
+ .rodata.k_panic.str1.4
+                0x08001942       0x3e build-test/src/kernel/kernel.o
+ .rodata.k_switch_context.str1.4
+                0x08001942        0xf build-test/src/kernel/kernel.o
+ .rodata.verdict.str1.4
+                0x08001942       0x1d build-test/app/app_test.o
+ .rodata.runner_body.str1.4
+                0x08001942      0x408 build-test/app/app_test.o
+ .rodata.main.str1.4
+                0x08001942       0x2a build-test/app/app_test.o
+                0x08001d4c                        . = ALIGN (0x4)
+ *fill*         0x08001942        0x2 
+
+.glue_7         0x08001944        0x0
+ .glue_7        0x08001944        0x0 linker stubs
+
+.glue_7t        0x08001944        0x0
+ .glue_7t       0x08001944        0x0 linker stubs
+
+.vfp11_veneer   0x08001944        0x0
+ .vfp11_veneer  0x08001944        0x0 linker stubs
+
+.v4_bx          0x08001944        0x0
+ .v4_bx         0x08001944        0x0 linker stubs
+
+.iplt           0x08001944        0x0
+ .iplt          0x08001944        0x0 build-test/src/board.o
+
+.rel.dyn        0x08001944        0x0
+ .rel.iplt      0x08001944        0x0 build-test/src/board.o
+
+.ARM.exidx
+ *(.ARM.exidx*)
+                0x08001944                        _sidata = LOADADDR (.data)
+
+.data           0x20000000        0x0 load address 0x08001944
+                0x20000000                        . = ALIGN (0x4)
+                0x20000000                        _sdata = .
+ *(.data*)
+                0x20000000                        . = ALIGN (0x4)
+                0x20000000                        _edata = .
+
+.igot.plt       0x20000000        0x0 load address 0x08001944
+ .igot.plt      0x20000000        0x0 build-test/src/board.o
+
+.bss            0x20000000     0x4a1c load address 0x08001944
+                0x20000000                        . = ALIGN (0x4)
+                0x20000000                        _sbss = .
+ *(.bss*)
+ .bss.idle_stack
+                0x20000000      0x200 build-test/src/kernel/kernel.o
+ .bss.idle_tcb  0x20000200       0x24 build-test/src/kernel/kernel.o
+ .bss.slice     0x20000224        0x4 build-test/src/kernel/kernel.o
+ .bss.ticks     0x20000228        0x4 build-test/src/kernel/kernel.o
+ .bss.registry  0x2000022c        0x4 build-test/src/kernel/kernel.o
+ .bss.rq_bitmap
+                0x20000230        0x4 build-test/src/kernel/kernel.o
+ .bss.rq_tail   0x20000234       0x20 build-test/src/kernel/kernel.o
+ .bss.rq_head   0x20000254       0x20 build-test/src/kernel/kernel.o
+ .bss.k_switch_count
+                0x20000274        0x4 build-test/src/kernel/kernel.o
+                0x20000274                k_switch_count
+ .bss.k_curr    0x20000278        0x4 build-test/src/kernel/kernel.o
+                0x20000278                k_curr
+ *fill*         0x2000027c        0x4 
+ .bss.victim_mem
+                0x20000280      0x600 build-test/app/app_test.o
+ .bss.t_victim  0x20000880       0x24 build-test/app/app_test.o
+ *fill*         0x200008a4        0x4 
+ .bss.s_f       0x200008a8     0x1000 build-test/app/app_test.o
+ .bss.t_f       0x200018a8       0x48 build-test/app/app_test.o
+ .bss.f_fails   0x200018f0        0x8 build-test/app/app_test.o
+ .bss.f_rounds  0x200018f8        0x8 build-test/app/app_test.o
+ .bss.s_cons    0x20001900      0x800 build-test/app/app_test.o
+ .bss.s_prod    0x20002100      0x800 build-test/app/app_test.o
+ .bss.t_cons    0x20002900       0x24 build-test/app/app_test.o
+ .bss.t_prod    0x20002924       0x24 build-test/app/app_test.o
+ .bss.consumed  0x20002948        0x4 build-test/app/app_test.o
+ .bss.t4_done   0x2000294c        0x8 build-test/app/app_test.o
+ .bss.work      0x20002954        0x8 build-test/app/app_test.o
+ *fill*         0x2000295c        0x4 
+ .bss.s_rr      0x20002960     0x1000 build-test/app/app_test.o
+ .bss.t_rr      0x20003960       0x48 build-test/app/app_test.o
+ .bss.rr_stop   0x200039a8        0x4 build-test/app/app_test.o
+ .bss.rr_count  0x200039ac        0x8 build-test/app/app_test.o
+ *fill*         0x200039b4        0x4 
+ .bss.s_hi      0x200039b8      0x800 build-test/app/app_test.o
+ .bss.t_hi      0x200041b8       0x24 build-test/app/app_test.o
+ .bss.t2_wake_cyc
+                0x200041dc        0x4 build-test/app/app_test.o
+ .bss.hs_done   0x200041e0        0x8 build-test/app/app_test.o
+ .bss.hs        0x200041e8        0x8 build-test/app/app_test.o
+ .bss.fail_count
+                0x200041f0        0x4 build-test/app/app_test.o
+ .bss.pass_count
+                0x200041f4        0x4 build-test/app/app_test.o
+ .bss.s_run     0x200041f8      0x800 build-test/app/app_test.o
+ .bss.t_run     0x200049f8       0x24 build-test/app/app_test.o
+ *(COMMON)
+                0x20004a1c                        . = ALIGN (0x4)
+                0x20004a1c                        _ebss = .
+                0x00000001                        ASSERT (((_estack - _ebss) >= 0x2000), MSP headroom below 8 KiB)
+OUTPUT(build-test/kernel.elf elf32-littlearm)
+LOAD linker stubs
+
+.debug_info     0x00000000     0x2d8c
+ .debug_info    0x00000000      0x299 build-test/src/board.o
+ .debug_info    0x00000299      0x370 build-test/src/kprintf.o
+ .debug_info    0x00000609       0xa6 build-test/src/system.o
+ .debug_info    0x000006af      0x282 build-test/src/uart.o
+ .debug_info    0x00000931      0x2a3 build-test/src/kernel/fault.o
+ .debug_info    0x00000bd4      0xb4e build-test/src/kernel/kernel.o
+ .debug_info    0x00001722      0x3a4 build-test/src/kernel/sem.o
+ .debug_info    0x00001ac6     0x127d build-test/app/app_test.o
+ .debug_info    0x00002d43       0x24 build-test/src/startup.o
+ .debug_info    0x00002d67       0x25 build-test/src/kernel/port.o
+
+.debug_abbrev   0x00000000      0xf67
+ .debug_abbrev  0x00000000      0x164 build-test/src/board.o
+ .debug_abbrev  0x00000164      0x18e build-test/src/kprintf.o
+ .debug_abbrev  0x000002f2       0x75 build-test/src/system.o
+ .debug_abbrev  0x00000367      0x157 build-test/src/uart.o
+ .debug_abbrev  0x000004be      0x146 build-test/src/kernel/fault.o
+ .debug_abbrev  0x00000604      0x403 build-test/src/kernel/kernel.o
+ .debug_abbrev  0x00000a07      0x1d2 build-test/src/kernel/sem.o
+ .debug_abbrev  0x00000bd9      0x366 build-test/app/app_test.o
+ .debug_abbrev  0x00000f3f       0x14 build-test/src/startup.o
+ .debug_abbrev  0x00000f53       0x14 build-test/src/kernel/port.o
+
+.debug_loclists
+                0x00000000     0x1029
+ .debug_loclists
+                0x00000000       0x7d build-test/src/board.o
+ .debug_loclists
+                0x0000007d      0x353 build-test/src/kprintf.o
+ .debug_loclists
+                0x000003d0       0x79 build-test/src/uart.o
+ .debug_loclists
+                0x00000449       0x36 build-test/src/kernel/fault.o
+ .debug_loclists
+                0x0000047f      0x4a9 build-test/src/kernel/kernel.o
+ .debug_loclists
+                0x00000928      0x142 build-test/src/kernel/sem.o
+ .debug_loclists
+                0x00000a6a      0x5bf build-test/app/app_test.o
+
+.debug_aranges  0x00000000      0x268
+ .debug_aranges
+                0x00000000       0x48 build-test/src/board.o
+ .debug_aranges
+                0x00000048       0x30 build-test/src/kprintf.o
+ .debug_aranges
+                0x00000078       0x20 build-test/src/system.o
+ .debug_aranges
+                0x00000098       0x38 build-test/src/uart.o
+ .debug_aranges
+                0x000000d0       0x20 build-test/src/kernel/fault.o
+ .debug_aranges
+                0x000000f0       0xa0 build-test/src/kernel/kernel.o
+ .debug_aranges
+                0x00000190       0x38 build-test/src/kernel/sem.o
+ .debug_aranges
+                0x000001c8       0x60 build-test/app/app_test.o
+ .debug_aranges
+                0x00000228       0x20 build-test/src/startup.o
+ .debug_aranges
+                0x00000248       0x20 build-test/src/kernel/port.o
+
+.debug_rnglists
+                0x00000000      0x455
+ .debug_rnglists
+                0x00000000       0x4f build-test/src/board.o
+ .debug_rnglists
+                0x0000004f       0x57 build-test/src/kprintf.o
+ .debug_rnglists
+                0x000000a6       0x13 build-test/src/system.o
+ .debug_rnglists
+                0x000000b9       0x34 build-test/src/uart.o
+ .debug_rnglists
+                0x000000ed       0x14 build-test/src/kernel/fault.o
+ .debug_rnglists
+                0x00000101      0x188 build-test/src/kernel/kernel.o
+ .debug_rnglists
+                0x00000289       0x25 build-test/src/kernel/sem.o
+ .debug_rnglists
+                0x000002ae      0x1a7 build-test/app/app_test.o
+
+.debug_macro    0x00000000     0x1204
+ .debug_macro   0x00000000       0x31 build-test/src/board.o
+ .debug_macro   0x00000031      0xae4 build-test/src/board.o
+ .debug_macro   0x00000b15      0x34e build-test/src/board.o
+ .debug_macro   0x00000e63      0x160 build-test/src/board.o
+ .debug_macro   0x00000fc3       0x35 build-test/src/kprintf.o
+ .debug_macro   0x00000ff8       0x58 build-test/src/kprintf.o
+ .debug_macro   0x00001050       0x2d build-test/src/system.o
+ .debug_macro   0x0000107d       0x31 build-test/src/uart.o
+ .debug_macro   0x000010ae       0x4b build-test/src/kernel/fault.o
+ .debug_macro   0x000010f9       0x34 build-test/src/kernel/fault.o
+ .debug_macro   0x0000112d       0x4b build-test/src/kernel/kernel.o
+ .debug_macro   0x00001178       0x31 build-test/src/kernel/sem.o
+ .debug_macro   0x000011a9       0x5b build-test/app/app_test.o
+
+.debug_line     0x00000000     0x20d5
+ .debug_line    0x00000000      0x264 build-test/src/board.o
+ .debug_line    0x00000264      0x3d3 build-test/src/kprintf.o
+ .debug_line    0x00000637       0xf8 build-test/src/system.o
+ .debug_line    0x0000072f      0x241 build-test/src/uart.o
+ .debug_line    0x00000970      0x154 build-test/src/kernel/fault.o
+ .debug_line    0x00000ac4      0x9ec build-test/src/kernel/kernel.o
+ .debug_line    0x000014b0      0x262 build-test/src/kernel/sem.o
+ .debug_line    0x00001712      0x8e1 build-test/app/app_test.o
+ .debug_line    0x00001ff3       0x6d build-test/src/startup.o
+ .debug_line    0x00002060       0x75 build-test/src/kernel/port.o
+
+.debug_str      0x00000000     0x4618
+ .debug_str     0x00000000     0x4618 build-test/src/board.o
+                               0x4078 (size before relaxing)
+ .debug_str     0x00004618     0x3abd build-test/src/kprintf.o
+ .debug_str     0x00004618     0x3fdd build-test/src/system.o
+ .debug_str     0x00004618     0x4045 build-test/src/uart.o
+ .debug_str     0x00004618     0x42b9 build-test/src/kernel/fault.o
+ .debug_str     0x00004618     0x43f3 build-test/src/kernel/kernel.o
+ .debug_str     0x00004618     0x3b13 build-test/src/kernel/sem.o
+ .debug_str     0x00004618     0x44b4 build-test/app/app_test.o
+ .debug_str     0x00004618       0x35 build-test/src/startup.o
+ .debug_str     0x00004618       0x39 build-test/src/kernel/port.o
+
+.comment        0x00000000       0x45
+ .comment       0x00000000       0x45 build-test/src/board.o
+                                 0x46 (size before relaxing)
+ .comment       0x00000045       0x46 build-test/src/kprintf.o
+ .comment       0x00000045       0x46 build-test/src/system.o
+ .comment       0x00000045       0x46 build-test/src/uart.o
+ .comment       0x00000045       0x46 build-test/src/kernel/fault.o
+ .comment       0x00000045       0x46 build-test/src/kernel/kernel.o
+ .comment       0x00000045       0x46 build-test/src/kernel/sem.o
+ .comment       0x00000045       0x46 build-test/app/app_test.o
+
+.ARM.attributes
+                0x00000000       0x30
+ .ARM.attributes
+                0x00000000       0x32 build-test/src/board.o
+ .ARM.attributes
+                0x00000032       0x32 build-test/src/kprintf.o
+ .ARM.attributes
+                0x00000064       0x32 build-test/src/system.o
+ .ARM.attributes
+                0x00000096       0x32 build-test/src/uart.o
+ .ARM.attributes
+                0x000000c8       0x32 build-test/src/kernel/fault.o
+ .ARM.attributes
+                0x000000fa       0x32 build-test/src/kernel/kernel.o
+ .ARM.attributes
+                0x0000012c       0x32 build-test/src/kernel/sem.o
+ .ARM.attributes
+                0x0000015e       0x32 build-test/app/app_test.o
+ .ARM.attributes
+                0x00000190       0x23 build-test/src/startup.o
+ .ARM.attributes
+                0x000001b3       0x23 build-test/src/kernel/port.o
+
+.debug_frame    0x00000000      0x530
+ .debug_frame   0x00000000       0x88 build-test/src/board.o
+ .debug_frame   0x00000088       0xa8 build-test/src/kprintf.o
+ .debug_frame   0x00000130       0x20 build-test/src/system.o
+ .debug_frame   0x00000150       0x5c build-test/src/uart.o
+ .debug_frame   0x000001ac       0x28 build-test/src/kernel/fault.o
+ .debug_frame   0x000001d4      0x184 build-test/src/kernel/kernel.o
+ .debug_frame   0x00000358       0x94 build-test/src/kernel/sem.o
+ .debug_frame   0x000003ec      0x144 build-test/app/app_test.o
+
+.debug_line_str
+                0x00000000       0x39
+ .debug_line_str
+                0x00000000       0x39 build-test/src/startup.o
+                                 0x27 (size before relaxing)
+ .debug_line_str
+                0x00000039       0x2b build-test/src/kernel/port.o
