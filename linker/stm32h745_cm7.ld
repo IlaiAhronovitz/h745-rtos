@@ -7,6 +7,11 @@ MEMORY
 {
   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 1024K
   DTCM  (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+
+  /* D2 domain SRAM3 (RM0399 p.136: 0x30040000-0x30047FFF).
+   * The ETH DMA cannot reach DTCM, so descriptors and packet buffers must
+   * live out here where both the CPU and the DMA can see them. */
+  SRAM3 (rw)  : ORIGIN = 0x30040000, LENGTH = 32K
 }
 
 ENTRY(Reset_Handler)
@@ -47,6 +52,18 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;
   } > DTCM
+
+  /* Anything tagged __attribute__((section(".eth_ram"))) lands in SRAM3.
+   * NOLOAD: this is RAM the DMA scribbles on, there is nothing to copy from
+   * flash at boot, so do not waste image space on it. ALIGN(32) matches the
+   * Cortex-M7 cache line, which keeps the MPU region tidy. */
+  .eth_ram (NOLOAD) : {
+    . = ALIGN(32);
+    _seth_ram = .;
+    *(.eth_ram*)
+    . = ALIGN(32);
+    _eeth_ram = .;
+  } > SRAM3
 
   /* Fail the link if statics leave less than 8 KiB for the MSP. */
   ASSERT(_estack - _ebss >= 8K, "MSP headroom below 8 KiB")

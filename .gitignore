@@ -1,4 +1,8 @@
 build/
 logs/
+
+# Vendor reference PDFs (~99 MB). Not ours to redistribute; docs/refs/INDEX.md
+# lists every document with its download link so the set is reproducible.
+docs/refs/*.pdf
 __pycache__/
 *.pyc

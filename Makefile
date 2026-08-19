@@ -17,8 +17,15 @@ OCD_SCR  := $(OCD_ROOT)/openocd/scripts
 # serial: a second ST-Link (the STM32L452 board) is often attached to this PC.
 STLINK_SERIAL := 002300373331511434333834
 
+# connect_assert_srst is mandatory here: the idle task sits in WFI, the D1 domain
+# gates the debug clock, and a normal attach reads a garbage CPUID (0xa05f0000)
+# then fails examination. Asserting SRST on connect catches the core before it
+# reaches WFI. (RM0399 §60.3 DBGMCU; the alternative is setting DBGMCU_CR
+# D1DBGCKEN/DBGSLPD1 in firmware, which only helps once firmware already runs.)
 OCD := "$(OPENOCD)" -s "$(OCD_SCR)" -f interface/stlink.cfg \
-       -c "adapter serial $(STLINK_SERIAL)" -f target/stm32h7x.cfg
+       -c "adapter serial $(STLINK_SERIAL)" \
+       -c "reset_config srst_only srst_nogate connect_assert_srst" \
+       -f target/stm32h7x.cfg
 
 BUILD := build
 APP   ?= demo
