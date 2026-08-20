@@ -21,7 +21,7 @@ extern const uint8_t NET_MAC[6];
 #define NET_IP2 137u
 #define NET_IP3  50u
 
-/* ---- Ethernet header, 14 bytes (you decoded this in print_frame) --------- */
+/* ---- Ethernet header, 14 bytes ------------------------------------------ */
 #define ETH_OFF_DST    0u
 #define ETH_OFF_SRC    6u
 #define ETH_OFF_TYPE  12u

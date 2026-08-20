@@ -22,6 +22,11 @@ def main():
     ap.add_argument("--log", default=None)
     args = ap.parse_args()
 
+    # The board can emit a partial byte mid-reset, which decodes to U+FFFD.
+    # A cp1252 console cannot encode that and the whole monitor dies, so
+    # force stdout to UTF-8 and never let an encoding error kill a capture.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     log = open(args.log, "wb") if args.log else None
     t_end = time.monotonic() + args.seconds if args.seconds else None
 
