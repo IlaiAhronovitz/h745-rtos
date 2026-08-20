@@ -1,26 +1,30 @@
-/* app_eth.c — Ethernet demo.  Build and run with:  make APP=eth flash
+/* app_eth.c — Ethernet demo running on the kernel.  make APP=eth flash
  *
- * Brings the link up, reports what the PHY negotiated, then runs three things
- * concurrently on a 1 ms poll loop:
+ * Three tasks share the driver:
  *
- *   - receives every frame on the wire (the MAC is in promiscuous mode) and
- *     prints a one-line summary of the first few;
- *   - answers ARP requests and pings for 192.168.137.50;
- *   - transmits one broadcast frame per second as a liveness check.
+ *   prio 2  rx    drains the receive ring, prints a summary of the first few
+ *                 frames, and hands every frame to net_handle_frame()
+ *   prio 3  link  watches the PHY, and starts the MAC once the link is up
+ *   prio 4  tx    sends one broadcast frame per second and reports counters
  *
- * Deliberately a bare main() rather than a kernel task: when something
- * misbehaves here, it is the Ethernet peripheral misbehaving and not the
- * scheduler. Moving this onto the RTOS is a later exercise.
+ * The kernel supplies its own idle task, so nothing here has to.
+ *
+ * rx sits at the highest priority of the three because the receive ring is
+ * only four descriptors deep: whenever a frame is waiting, draining it is the
+ * most urgent thing in the system.
  *
  * Expected at boot (LAN8742A, DS00002165 section 3.9):
  *   ID1 (reg 2) = 0x0007
  *   ID2 (reg 3) = 0xC13x   -- model 0x13, low nibble is the silicon revision
  */
 #include <stdint.h>
+#include <stdarg.h>
 #include "stm32h745.h"
 #include "uart.h"
 #include "board.h"
 #include "kprintf.h"
+#include "kernel.h"
+#include "sem.h"
 #include "eth.h"
 #include "net.h"
 
@@ -35,13 +39,49 @@
  * only the real content appears here.
  */
 static const uint8_t tx_frame[] = {
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,        /* dst: broadcast          */
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,        /* dst: broadcast            */
     0x02, 0x00, 0x00, 0x74, 0x50, 0x01,        /* src: locally administered */
-    0x88, 0xB5,                                 /* EtherType               */
+    0x88, 0xB5,                                 /* EtherType                */
     'h','7','4','5','-','r','t','o','s',' ','h','e','l','l','o'
 };
 
-/* ---- Frame summaries -----------------------------------------------------
+/* ---- shared state --------------------------------------------------------
+ * kprintf is not reentrant and a line is several calls long, so tasks
+ * serialise on a binary semaphore -- the same arrangement app_demo.c uses.
+ *
+ * eth_running is written by the link task and read by the other two. It is a
+ * single word, written once, so a plain volatile flag is sufficient; anything
+ * richer than that would need the kernel lock.
+ */
+static k_sem_t print_lock;
+static volatile int      eth_running;
+static volatile uint32_t frames, total, sent;
+
+/* Signalled by the Ethernet ISR, waited on by the rx task. Starts at 0: the
+ * task blocks until a frame actually arrives. */
+static k_sem_t rx_sem;
+
+/* Installed into eth_rx_notify, so it runs in interrupt context. k_sem_give()
+ * is documented as safe from an ISR at or below the kernel's BASEPRI level,
+ * which is the priority eth_irq_enable() was given. */
+static void rx_notify(void)
+{
+    k_sem_give(&rx_sem);
+}
+
+
+__attribute__((format(printf, 1, 2)))
+static void say(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    k_sem_take(&print_lock);
+    kvprintf(fmt, ap);
+    k_sem_give(&print_lock);
+    va_end(ap);
+}
+
+/* ---- frame summaries -----------------------------------------------------
  * Every Ethernet frame begins with the same 14 bytes, whatever the payload:
  *
  *   bytes  0..5   destination MAC
@@ -67,40 +107,137 @@ static const char *ethertype_name(uint16_t t)
     }
 }
 
+/* Takes the print lock around the whole line: a summary is several kprintf
+ * calls, and another task printing in between would interleave them. */
 static void print_frame(const uint8_t *f, uint16_t len)
 {
     /* The EtherType is big-endian on the wire and this core is little-endian,
      * so it is assembled by hand rather than read as a uint16_t. */
     uint16_t type = (uint16_t)((f[12] << 8) | f[13]);
 
+    k_sem_take(&print_lock);
     print_mac(f);
     kprintf(" <- ");
     print_mac(f + 6);
     kprintf("  type=%04x %s  %u B\n", type, ethertype_name(type), len);
+    k_sem_give(&print_lock);
 }
 
-/* Busy-wait milliseconds using the DWT cycle counter, which system_init()
- * already switched on. No kernel here, so no k_sleep_ms(). */
-static void delay_ms(uint32_t ms)
-{
-    uint32_t start = DWT_CYCCNT;
-    uint32_t ticks = ms * (SYS_CLK_HZ / 1000u);
+/* ---- tasks ---------------------------------------------------------------*/
 
-    while ((DWT_CYCCNT - start) < ticks) {
-        /* spin */
+static void link_body(void *arg)
+{
+    (void)arg;
+
+    int link_prev = -1;
+
+    for (;;) {
+        uint16_t bsr      = eth_mdio_read(ETH_PHY_ADDR, PHY_REG_BSR);
+        int      link_now = (bsr & PHY_BSR_LINK) ? 1 : 0;
+
+        /* link_prev starts at -1, a value the link bit can never hold, so the
+         * first reading always counts as a change and reports once. */
+        if (link_now != link_prev) {
+            say("Link %s\n", link_now ? "up" : "down");
+            link_prev = link_now;
+            board_led(LED_GREEN, link_now);
+        }
+
+        /* The MAC's speed and duplex must match what the PHY negotiated, so
+         * it cannot be started until the link is up. */
+        if (link_now && !eth_running) {
+            uint16_t scsr = eth_mdio_read(ETH_PHY_ADDR, PHY_REG_SCSR);
+            unsigned hcd  = (scsr >> PHY_SCSR_HCD_SHIFT) & PHY_SCSR_HCD_MASK;
+            unsigned s100 = (hcd & PHY_HCD_100)  ? 1u : 0u;
+            unsigned fd   = (hcd & PHY_HCD_FULL) ? 1u : 0u;
+
+            say("negotiated %s Mbps, %s duplex -- starting MAC\n",
+                s100 ? "100" : "10", fd ? "full" : "half");
+
+            eth_start(s100, fd);
+            eth_irq_enable(K_BASEPRI_MASK);
+            say("MAC started (swr_timeout=%u)\n", eth_swr_timed_out);
+
+            eth_running = 1;
+        }
+
+        k_sleep_ms(200);
     }
 }
+
+static void rx_body(void *arg)
+{
+    (void)arg;
+
+    /* static, not on the stack: 1536 bytes would be a large fraction of this
+     * task's stack, and there is only ever one of these tasks. */
+    static uint8_t rx_frame[ETH_BUF_SIZE];
+
+    for (;;) {
+        /* Blocks with zero CPU cost until the ISR signals. Before the MAC
+         * starts no interrupt can fire, so this simply stays blocked --
+         * which is why no eth_running check is needed here.
+         *
+         * The drain loop matters: the semaphore guarantees at least one
+         * frame is waiting, not exactly one. Handling a single frame per
+         * wake would fall behind on a burst, and with four descriptors the
+         * ring would overflow. */
+        k_sem_take(&rx_sem);
+        uint16_t len;
+        while ((len = eth_rx_poll(rx_frame, sizeof rx_frame)) != 0u) {
+            frames++;
+            total += len;
+
+            if (frames <= 5u) {
+                print_frame(rx_frame, len);
+            }
+
+            net_handle_frame(rx_frame, len);
+        }
+    }
+}
+
+static void tx_body(void *arg)
+{
+    (void)arg;
+
+    for (;;) {
+        if (eth_running) {
+            if (eth_tx_send(tx_frame, (uint16_t)sizeof tx_frame) == 0) {
+                sent++;
+            }
+
+            say("tx %lu | rx %lu frames, %lu bytes | rx irqs %lu\n",
+                (unsigned long)sent,
+                (unsigned long)frames, (unsigned long)total,
+                (unsigned long)eth_rx_irq_count);
+        }
+
+        k_sleep_ms(1000);
+    }
+}
+
+/* ---- bring-up and start --------------------------------------------------*/
+
+#define STACK_WORDS 512u
+
+static k_task_t t_link, t_rx, t_tx;
+static uint32_t s_link[STACK_WORDS] __attribute__((aligned(8)));
+static uint32_t s_rx[STACK_WORDS]   __attribute__((aligned(8)));
+static uint32_t s_tx[STACK_WORDS]   __attribute__((aligned(8)));
 
 int main(void)
 {
     board_init();
     uart_init(115200);
 
-    kprintf("\n=== h745-rtos: bare-metal ethernet ===\n");
+    kprintf("\n=== h745-rtos: ethernet on the kernel ===\n");
     kprintf("HCLK %lu MHz, PHY addr %u\n",
             (unsigned long)(SYS_CLK_HZ / 1000000u), ETH_PHY_ADDR);
 
-    /* Order matters: see the header comment in eth.c. */
+    /* Driver bring-up happens before the scheduler starts: it is a fixed
+     * sequence with ordering constraints (see eth.c) and nothing about it
+     * benefits from concurrency. Order matters. */
     eth_mem_init();
     eth_rings_init();
     eth_pins_init();
@@ -114,7 +251,6 @@ int main(void)
 
     if (id1 == 0x0007u && (id2 & 0xFFF0u) == 0xC130u) {
         kprintf("PASS: LAN8742A responding (rev %u)\n", id2 & 0xFu);
-        board_led(LED_GREEN, 1);
     } else if (id1 == 0xFFFFu || id1 == 0x0000u) {
         /* Less a failure than a finding: 0xFFFF is a floating bus with nobody
          * answering, 0x0000 is a bus held low. Those point at different
@@ -129,73 +265,16 @@ int main(void)
 
     uart_flush();
 
-    /* The main loop polls every 1 ms, because the RX ring is only four deep
-     * and a busy wire fills that quickly. MDIO is comparatively slow, so the
-     * link is only re-checked every 200th pass. */
-    int      link_prev = -1;
-    int      started   = 0;
-    uint32_t frames    = 0;
-    uint32_t total     = 0;
-    uint32_t sent      = 0;
-    unsigned tick      = 0;
+    k_sem_init(&print_lock, 1);
+    k_sem_init(&rx_sem, 0);
 
-    for (;;) {
-        if ((tick++ % 200u) == 0u) {
-            uint16_t bsr_now  = eth_mdio_read(ETH_PHY_ADDR, PHY_REG_BSR);
-            int      link_now = (bsr_now & PHY_BSR_LINK) ? 1 : 0;
+    /* Install the hook before enabling the interrupt, so it can never fire
+     * with eth_rx_notify still NULL. */
+    eth_rx_notify = rx_notify;
 
-            /* link_prev starts at -1, a value the link bit can never hold, so
-             * the first reading always counts as a change and reports once. */
-            if (link_now != link_prev) {
-                kprintf("Link %s\n", link_now ? "up" : "down");
-                link_prev = link_now;
-                board_led(LED_GREEN, link_now);
-            }
+    k_task_create(&t_rx,   "rx   ", rx_body,   0, 2, s_rx,   STACK_WORDS);
+    k_task_create(&t_link, "link ", link_body, 0, 3, s_link, STACK_WORDS);
+    k_task_create(&t_tx,   "tx   ", tx_body,   0, 4, s_tx,   STACK_WORDS);
 
-            /* The MAC's speed and duplex must match what the PHY negotiated,
-             * so it cannot be started until the link is up. */
-            if (link_now && !started) {
-                uint16_t scsr = eth_mdio_read(ETH_PHY_ADDR, PHY_REG_SCSR);
-                unsigned hcd  = (scsr >> PHY_SCSR_HCD_SHIFT) & PHY_SCSR_HCD_MASK;
-                unsigned s100 = (hcd & PHY_HCD_100)  ? 1u : 0u;
-                unsigned fd   = (hcd & PHY_HCD_FULL) ? 1u : 0u;
-
-                kprintf("negotiated %s Mbps, %s duplex -- starting MAC\n",
-                        s100 ? "100" : "10", fd ? "full" : "half");
-                eth_start(s100, fd);
-                kprintf("MAC started (swr_timeout=%u)\n", eth_swr_timed_out);
-                started = 1;
-            }
-        }
-
-        if (started && (tick % 1000u) == 0u) {
-            int rc = eth_tx_send(tx_frame, (uint16_t)sizeof(tx_frame));
-
-            if (rc == 0) {
-                sent++;
-            }
-            kprintf("tx %lu sent (last rc=%d) | rx %lu frames, %lu bytes\n",
-                    (unsigned long)sent, rc,
-                    (unsigned long)frames, (unsigned long)total);
-        }
-
-        if (started) {
-            static uint8_t rx_frame[ETH_BUF_SIZE];
-            uint16_t       len = eth_rx_poll(rx_frame, sizeof(rx_frame));
-
-            if (len != 0u) {
-                frames++;
-                total += len;
-
-                /* Only the first few: at 100 Mbit the console cannot keep up. */
-                if (frames <= 12u) {
-                    print_frame(rx_frame, len);
-                }
-
-                net_handle_frame(rx_frame, len);
-            }
-        }
-
-        delay_ms(1);
-    }
+    k_start();                  /* never returns */
 }

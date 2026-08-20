@@ -153,6 +153,30 @@ uint16_t eth_rx_poll(uint8_t *dst, uint16_t dst_size);
  * only real frame content. */
 int      eth_tx_send(const uint8_t *data, uint16_t len);
 
+/* Enable the Ethernet receive interrupt and route it to the NVIC.
+ *
+ * nvic_prio must be numerically >= the kernel's BASEPRI mask for the handler
+ * to be kernel-aware -- i.e. maskable by the kernel lock, and therefore
+ * allowed to call k_sem_give(). Pass K_BASEPRI_MASK, as board_button_init()
+ * does. A more urgent (numerically lower) priority would run underneath the
+ * kernel and must not touch kernel state at all. */
+void eth_irq_enable(uint8_t nvic_prio);
+
+/* Called from the receive ISR when a frame has arrived. NULL by default.
+ *
+ * This hook is how the driver stays independent of the kernel. eth.c includes
+ * no kernel header and knows nothing about tasks or semaphores; the
+ * application installs a function here that does whatever waking it needs.
+ * Anything else -- a bare polling loop, a different RTOS -- can use this
+ * driver unchanged.
+ *
+ * Runs in interrupt context at the priority passed to eth_irq_enable(), so
+ * whatever is installed must be safe to call from an ISR. */
+extern void (*eth_rx_notify)(void);
+
+/* Incremented by the ISR on every receive interrupt. */
+extern volatile uint32_t eth_rx_irq_count;
+
 /* Rings and buffers, in .eth_ram. Exposed for diagnostics. */
 extern eth_desc_t eth_rx_desc[ETH_RX_DESC_COUNT];
 extern eth_desc_t eth_tx_desc[ETH_TX_DESC_COUNT];

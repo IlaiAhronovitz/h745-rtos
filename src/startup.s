@@ -71,7 +71,11 @@ g_vectors:
     .word Default_Handler       /* 38: USART2          */
     .word USART3_IRQHandler     /* 39: USART3 (VCP)    */
     .word EXTI15_10_IRQHandler  /* 40: EXTI15_10 (user button PC13) */
-    .rept 109                   /* 41..149: unused     */
+    .rept 20                    /* 41..60: unused      */
+    .word Default_Handler
+    .endr
+    .word ETH_IRQHandler        /* 61: Ethernet MAC+DMA */
+    .rept 88                    /* 62..149: unused     */
     .word Default_Handler
     .endr
 

@@ -221,7 +221,7 @@ void eth_rings_init(void)
 
         /* des3 last, always. The instant OWN goes to 1 the DMA may act on this
          * descriptor, so the buffer address must already be valid. */
-        eth_rx_desc[i].des3 = RDES3_OWN | RDES3_BUF1V;
+        eth_rx_desc[i].des3 = RDES3_OWN | RDES3_BUF1V | RDES3_IOC;
     }
 
     for (unsigned i = 0; i < ETH_TX_DESC_COUNT; i++) {
@@ -340,7 +340,7 @@ uint16_t eth_rx_poll(uint8_t *dst, uint16_t dst_size)
     /* Re-arm. The DMA overwrote des0 and des3 with status, so both are rebuilt
      * exactly as eth_rings_init() did, des3 last. */
     eth_rx_desc[rx_index].des0 = (uint32_t)(uintptr_t)eth_rx_buf[rx_index];
-    eth_rx_desc[rx_index].des3 = RDES3_OWN | RDES3_BUF1V;
+    eth_rx_desc[rx_index].des3 = RDES3_OWN | RDES3_BUF1V | RDES3_IOC;
 
     rx_index = (rx_index + 1u) % ETH_RX_DESC_COUNT;
 
@@ -406,4 +406,51 @@ int eth_tx_send(const uint8_t *data, uint16_t len)
     ETH_DMACTXDTPR = (uint32_t)(uintptr_t)&eth_tx_desc[tx_index];
 
     return 0;
+}
+
+/* ==========================================================================
+ * Receive interrupt
+ *
+ * Replaces polling: the DMA raises an interrupt when it has closed a
+ * descriptor, instead of the CPU asking repeatedly whether anything arrived.
+ * ========================================================================== */
+volatile uint32_t eth_rx_irq_count;
+
+/* NULL until the application installs one -- see eth.h. */
+void (*eth_rx_notify)(void);
+
+void eth_irq_enable(uint8_t nvic_prio)
+{
+    /* RIE alone is not enough. NIE is a summary gate: with it clear, receive
+     * interrupts are recorded in DMACSR but never reach the NVIC. */
+    ETH_DMACIER |= DMACIER_NIE | DMACIER_RIE;
+
+    NVIC_IPR8(IRQ_ETH) = nvic_prio;
+    NVIC_ISER(1)       = 1u << (IRQ_ETH - 32u);
+}
+
+void ETH_IRQHandler(void)
+{
+    uint32_t status = ETH_DMACSR;
+
+    if (status & DMACSR_RI) {
+        eth_rx_irq_count++;
+
+        /* NULL until the application installs one. Calling through an
+         * uninstalled function pointer from an ISR is a hard fault with a
+         * singularly unhelpful traceback. */
+        if (eth_rx_notify) {
+            eth_rx_notify();
+        }
+    }
+
+    /* Unconditional, and both bits. These are write-1-to-clear, so writing a
+     * 1 clears rather than sets -- the same convention as EXTI_C1PR1.
+     *
+     * The interrupt line stays asserted while the flag is set, so returning
+     * without clearing means the NVIC re-enters this handler immediately and
+     * forever: no task ever runs again and the board looks dead. NIS is the
+     * summary bit that actually drives the line, so clearing only RI is not
+     * enough. */
+    ETH_DMACSR = DMACSR_RI | DMACSR_NIS;
 }

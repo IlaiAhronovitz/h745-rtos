@@ -24,9 +24,8 @@
 #define SCB_CPACR       REG32(0xE000ED88u)
 
 /* ---- MPU (PM0253 §4.6, PDF pp.222-229) ----------------------------------
- * Needed to mark the ETH DMA memory non-cacheable. Field positions are from
- * Table 89 (PDF p.227); the TEX/C/B/S encodings are Table 91 (PDF p.228).
- * What each field should CONTAIN is milestone 2 step G, not defined here. */
+ * Used to mark the ETH DMA memory non-cacheable. Field positions are from
+ * Table 89 (PDF p.227); the TEX/C/B/S encodings are Table 91 (PDF p.228). */
 #define MPU_TYPE        REG32(0xE000ED90u)
 #define MPU_CTRL        REG32(0xE000ED94u)
 #define   MPU_CTRL_ENABLE     (1u << 0)
@@ -154,11 +153,7 @@ typedef struct {
 
 /* ---------------------- Ethernet MAC (RM0399 §61) ------------------------- */
 /* Synopsys DesignWare EQOS core. Base 0x40028000 (board DTS: ethernet@40028000).
- * Only the MDIO management pair is declared here; the DMA/descriptor registers
- * arrive with milestone 2. Field positions below are transcribed from RM0399
- * §61.11, PDF pp.3150-3152 -- positions only. Which GOC encoding means "read",
- * and which CR encoding is legal at 64 MHz, are in the same pages and are
- * deliberately NOT defined here. */
+ * Field positions are transcribed from RM0399 §61.11, PDF pp.3150-3152. */
 #define ETH_BASE        0x40028000u
 #define ETH_MACMDIOAR   REG32(ETH_BASE + 0x200u)  /* MDIO address  (p.3150) */
 #define ETH_MACMDIODR   REG32(ETH_BASE + 0x204u)  /* MDIO data     (p.3152) */
@@ -178,7 +173,7 @@ typedef struct {
 
 #define   MACMDIODR_GD_MASK     0xFFFFu   /* [15:0] the 16 data bits            */
 
-/* ---- MAC / MTL / DMA, milestone 2 step I --------------------------------
+/* ---- MAC / MTL / DMA ----------------------------------------------------
  * Every offset and bit position below was read out of RM0399 §61.11; the
  * page number is on each line. "MTL" is the FIFO layer that sits between the
  * MAC and the DMA. Channel 0 is the only one this board uses. */
@@ -221,6 +216,15 @@ typedef struct {
 #define ETH_DMACRXDTPR  REG32(ETH_BASE + 0x1128u)  /* p.3086 rx tail ptr  */
 #define ETH_DMACTXRLR   REG32(ETH_BASE + 0x112Cu)  /* p.3086 [9:0] TDRL   */
 #define ETH_DMACRXRLR   REG32(ETH_BASE + 0x1130u)  /* p.3087 [9:0] RDRL   */
+#define ETH_DMACIER     REG32(ETH_BASE + 0x1134u)  /* p.3087 */
+#define   DMACIER_RIE       (1u << 6)              /* receive interrupt   */
+#define   DMACIER_RBUE      (1u << 7)              /* rx buffer unavail   */
+#define   DMACIER_FBEE      (1u << 12)             /* fatal bus error     */
+#define   DMACIER_AIE       (1u << 14)             /* abnormal summary    */
+#define   DMACIER_NIE       (1u << 15)             /* normal summary --
+                                                    * a gate: without it
+                                                    * RIE alone never
+                                                    * reaches the NVIC */
 #define ETH_DMACSR      REG32(ETH_BASE + 0x1160u)  /* p.3093 */
 #define   DMACSR_RI         (1u << 6)              /* receive interrupt   */
 #define   DMACSR_RBU        (1u << 7)              /* rx buffer unavail   */
@@ -229,6 +233,7 @@ typedef struct {
 #define   DMACSR_NIS        (1u << 15)
 
 /* ------------------------------ IRQ numbers ------------------------------- */
+#define IRQ_ETH         61   /* board DTS: interrupts = <0x3d 0x0> */
 #define IRQ_USART3      39
 #define IRQ_EXTI15_10   40
 
