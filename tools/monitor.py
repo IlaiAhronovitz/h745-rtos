@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Raw serial monitor for the Nucleo VCP. Byte-true passthrough + optional log.
 
-    python tools/monitor.py --port COM13 --seconds 12 --log logs/run.txt
+    python tools/monitor.py --port COMxx --seconds 12 --log logs/run.txt
 
 The ST-Link VCP number is assigned by Windows and moves between sessions
-(it has been COM44 and COM13). Check it with:
+Check it with:
     [System.IO.Ports.SerialPort]::GetPortNames()
 """
 import argparse
@@ -16,7 +16,7 @@ import serial
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", default="COM13")
+    ap.add_argument("--port", required=True)
     ap.add_argument("--baud", type=int, default=115200)
     ap.add_argument("--seconds", type=float, default=0, help="0 = run forever")
     ap.add_argument("--log", default=None)

@@ -65,6 +65,15 @@ SECTIONS
     _eeth_ram = .;
   } > SRAM3
 
+  /* USB OTG buffer-DMA memory. Same reasoning as .eth_ram: the OTG core's
+   * internal DMA masters the D2 AHB matrix and cannot reach DTCM, so its
+   * buffers must live out here. */
+  .usb_ram (NOLOAD) : {
+    . = ALIGN(32);
+    *(.usb_ram*)
+    . = ALIGN(32);
+  } > SRAM3
+
   /* Fail the link if statics leave less than 8 KiB for the MSP. */
   ASSERT(_estack - _ebss >= 8K, "MSP headroom below 8 KiB")
 }

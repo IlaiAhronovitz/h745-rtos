@@ -1,4 +1,4 @@
-# h745-rtos — preemptive RTOS kernel and Ethernet driver for STM32H745 (Cortex-M7)
+# h745-rtos — preemptive RTOS kernel, Ethernet driver and USB-host LTE modem stack for STM32H745 (Cortex-M7)
 
 A from-scratch RTOS kernel (~480 lines) and a from-scratch Ethernet driver
 (~830 lines), ~2.6 kLOC in total with platform and demo apps. No HAL, no CMSIS
@@ -63,12 +63,62 @@ Four failures found during bring-up, none of which announced themselves:
 | Ping never answered | `MACCR.CST` unset, so frames still carried their 4-byte FCS and the reported length was 4 too long, corrupting the ICMP checksum. |
 | Ping answered, but ~1 s late | Missing `DSB` before the TX doorbell: the MAC could see the doorbell before `OWN` and go back to sleep. |
 
+## Cellular modem over a from-scratch USB host
+
+The MCU drives a Quectel RM500Q-GL 5G module (`2c7c:0800`, used here on LTE)
+through its own USB port and reaches the public internet with no PC and no
+vendor driver in the loop:
+
+> RTOS → bare-metal DWC2 USB host (`usbh.c`) → AT engine (`atc.c`, `modem.c`)
+> → QMI control over EP0 (`qmi.c`) → raw-IP data pipe (`rmnet.c`) → IPv4/ICMP/UDP/DNS (`ipnet.c`) → LTE
+
+- **USB host** on `OTG_FS` (`0x40080000`), buffer DMA, polled: enumeration,
+  descriptor parsing, bulk pipes with toggle tracking, STALL recovery
+  (`CLEAR_FEATURE(ENDPOINT_HALT)`), multi-packet transfers. Full speed only:
+  the Nucleo has no ULPI PHY, so 12 Mbit/s is the bus ceiling.
+- **AT engine** — command/response/URC classifier with resync, echo handling
+  and `+CME` decoding; finds the AT port by class triple plus a live `AT`.
+- **QMI over EP0** — CTL/WDA/WDS: client-id allocate/release, raw-IP data
+  format, start/stop network, current settings (address, mask, gateway, DNS,
+  MTU). The APN is read from the module's own context 1 or passed at build
+  time; nothing operator-specific is compiled in.
+- **Clocking** — `clock_init()` takes the core from 64 MHz HSI to 480 MHz
+  (HSE → PLL1, VOS0, SMPS supply config), with a safe 200 MHz fallback, and
+  clock rates are runtime values so the console stays correct either way.
+- **Host simulation** — `tests/host` compiles the real `usbh.c`, `atc.c`,
+  `modem.c` and `qmi.c` for x86 against a register-level OTG model with
+  emulated modems: **255 checks** (`make && ./test_m1 … ./test_m4`).
+
+### Measured on hardware (Nucleo-H745ZI-Q + RM500Q-GL on a commercial LTE network)
+
+| What | Result |
+|---|---|
+| Public internet from the MCU | `ping 8.8.8.8` reply; `example.com` resolved over LTE |
+| Echo reliability | 18/20 replies, RTT min 39 / avg 52 / max 61 ms |
+| Packet sizes | 8, 64, 256, 512, 1024, 1400 B payloads, each reply verified byte for byte |
+| Uplink burst, 1400 B, core at 64 / 200 / 480 MHz | **368 / 676 / 842 kB/s** (3870 / 2110 / 1695 µs per packet) |
+| Downlink, 1400 B, 32 echoes in flight | **993 kB/s** (a floor: the network sets the reply rate) |
+| Share of the USB FS bulk ceiling (~1216 kB/s) | uplink 69 %, downlink 82 % |
+| RTT at 1400 B after one-transaction frame reads | 163 → 45 ms |
+| Kernel self-test at 480 MHz | 6/6 PASS; round robin 7.05 M iterations/s (~1.2 M at 64 MHz) |
+
+Write-ups: `docs/QMI-DATAPLANE.md` (transport, TLVs, the bugs found and how a
+provisioning fault on one SIM was told apart from a driver fault),
+`docs/THROUGHPUT.md` (ceiling arithmetic and the optimisation plan),
+`docs/USBH-VERIFICATION.md` (register-level proof chain for the host).
+
+```
+make APP=modem BUILD=build/modem                          # APN from the SIM
+make APP=modem BUILD=build/modem CFLAGS_EXTRA='-DDATA_APN=\"<apn>\"'
+```
+
 ## Hardware
 
 | | |
 |---|---|
 | Board | ST Nucleo-H745ZI-Q (STM32H745ZI, dual-core CM7 + CM4) |
-| Kernel core | Cortex-M7 @ 64 MHz (reset HSI — the H7 PWR/PLL/SMPS dance is deliberately out of scope) |
+| Kernel core | Cortex-M7 @ 480 MHz (HSE → PLL1, VOS0; falls back to 200 MHz, then 64 MHz HSI) |
+| USB host | `OTG_FS` on CN13 via a micro-B OTG adapter; modem powered from its own carrier supply |
 | CM4 core | Parked by a 4-instruction `wfi` image in flash bank 2 (`stub/`) — the chip boots both cores |
 | Ethernet | Microchip LAN8742A PHY over RMII, MDIO address 0 |
 | Console | USART3 PD8/PD9 → on-board ST-Link VCP, 115200 8N1 |
@@ -84,16 +134,25 @@ src/kernel/   kernel.c/.h  scheduler, tasks, tick, panic
               fault.c      HardFault register dump
 src/          eth.c/.h     Ethernet MAC + DMA driver
               net.c/.h     ARP and ICMP echo
+              usbh.c/.h    USB host (DWC2 OTG_FS), usbdump.c descriptor dump
+              atc.c/.h     AT command engine; modem.c/.h modem policy layer
+              qmi.c/.h     QMI over EP0; rmnet.c/.h raw-IP data pipe
+              ipnet.c/.h   IPv4/ICMP/UDP/DNS client for the data pipe
               startup.s    vector table + reset (data/bss init, FPU on)
               stm32h745.h  hand-written register map (only what's used)
               system.c uart.c board.c kprintf.c libmin.c/.h
 app/          app_demo.c   6-task demo (default APP=demo)
               app_test.c   on-target validation suite (APP=test)
               app_eth.c    Ethernet demo (APP=eth)
+              app_usb.c    USB host bring-up + enumeration (APP=usb)
+              app_modem.c  modem bring-up, data call, proof run, benchmarks (APP=modem)
+              app_bench.c  context-switch / semaphore-wake benchmark (APP=bench)
 linker/       stm32h745_cm7.ld, cm4_stub.ld
 stub/         cm4_stub.s   CM4 parking image
-tools/        monitor.py   raw serial capture
-docs/         ARCHITECTURE.md (context-switch walkthrough), BENCH.md
+tests/host/   x86 simulation of the USB host, AT engine and QMI (255 checks)
+tools/        monitor.py capture.py at.py  serial tools; hil.py  bench harness
+docs/         ARCHITECTURE.md (context-switch walkthrough), BENCH.md,
+              QMI-DATAPLANE.md, THROUGHPUT.md, USBH-VERIFICATION.md
               refs/INDEX.md  every vendor document used, with page numbers
 ```
 
@@ -110,7 +169,7 @@ make APP=test BUILD=build-test   # validation suite
 make APP=eth        # Ethernet demo
 make flash-stub     # one-time: park the CM4 (flash bank 2)
 make flash          # program + verify + reset via OpenOCD
-python tools/monitor.py --port COM13 --log logs/run.txt
+python tools/monitor.py --port COMxx --log logs/run.txt
 ```
 
 ## Demo applications
@@ -160,8 +219,8 @@ session — see `docs/BENCH.md`.)*
 
 Kept out on purpose, to stay minimal and reviewable:
 
-- 64 MHz reset clocks, caches off — deterministic bring-up; the 480 MHz
-  PWR/VOS/flash-latency sequence is a documented stretch goal.
+- Caches off — deterministic bring-up. (The clock is now raised to 480 MHz
+  at boot; see the cellular section.)
 - No semaphore timeouts, no mutex/priority-inheritance, no per-task MPU
   guards, no tickless idle — each is a clean extension point, listed in
   `docs/ARCHITECTURE.md`. (The MPU *is* used, for one region: marking the

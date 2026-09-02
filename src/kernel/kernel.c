@@ -161,7 +161,9 @@ void k_start(void)
     k_curr->state = K_RUNNING;
     k_curr->n_switched_in = 1;
 
-    SYST_RVR = K_CPU_HZ / K_TICK_HZ - 1u;
+    /* From the LIVE cpu clock: a second hard-coded copy would silently
+     * mis-tick the whole scheduler the moment clock_init() changes it. */
+    SYST_RVR = g_cpu_hz / K_TICK_HZ - 1u;
     SYST_CVR = 0;
     SYST_CSR = SYST_CSR_ENABLE | SYST_CSR_TICKINT | SYST_CSR_CLKSOURCE;
 

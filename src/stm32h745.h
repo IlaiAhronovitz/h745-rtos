@@ -7,9 +7,43 @@
 
 #define REG32(addr) (*(volatile uint32_t *)(addr))
 
-/* System clock: reset defaults on purpose — HSI 64 MHz, all prescalers /1
- * (RM0399 §8.4.3). Raising clocks means the PWR/VOS/SMPS dance; out of scope. */
-#define SYS_CLK_HZ 64000000u
+/* ---- clock tree, set by clock_init() in system.c -------------------------
+ * HSE 8 MHz (ST-LINK MCO, bypass) -> PLL1 -> sys_ck 200 MHz.
+ *
+ *   sys_ck     200 MHz   PLL1P
+ *   D1CPRE /1  200 MHz   the CPU, DWT_CYCCNT and SysTick all run here
+ *   HPRE   /2  100 MHz   AXI/AHB
+ *   xPPRE  /2   50 MHz   APB1..4, and therefore USART3
+ *
+ * 200 MHz is what the reset voltage scale (VOS3) allows without touching the
+ * PWR supply configuration, which on the -Q board means the SMPS. Going above
+ * it needs VOS1 and that dance; this stops short of it deliberately.
+ *
+ * These are three DIFFERENT clocks and code must ask for the right one: DWT
+ * and SysTick count CPU cycles, while USART3's baud divisor is APB1. They were
+ * interchangeable only while every prescaler was /1. */
+#define SYS_CLK_HZ_TARGET  200000000u
+#define APB1_CLK_HZ_TARGET  50000000u
+#define HSI_CLK_HZ          64000000u   /* what reset gives us */
+
+/* These are RUNTIME values, not constants, and that is deliberate: if the PLL
+ * fails to come up, clock_init() leaves the chip on HSI and these keep saying
+ * 64 MHz. Baked-in constants would leave the UART divisor wrong in exactly the
+ * situation where the console is the only way to find out what happened. */
+extern uint32_t g_cpu_hz;    /* CPU: DWT_CYCCNT, SysTick, every cycle wait */
+extern uint32_t g_apb1_hz;   /* USART3's baud divisor                      */
+extern uint32_t g_idcode;    /* DBGMCU_IDC: silicon device and revision    */
+extern uint32_t g_clk_diag;  /* why clock_init landed where it did          */
+extern uint32_t g_pwr_csr1, g_pwr_d3cr, g_pwr_cr3;
+
+/* Kept as an alias so existing call sites read naturally. */
+#define SYS_CLK_HZ  g_cpu_hz
+
+/* The USB kernel clock is the one exception to "reset defaults": the OTG core
+ * needs an accurate 48 MHz that free-running HSI cannot provide for a HOST
+ * (the host *generates* bus timing; there is no SOF to trim against). It is
+ * made from the ST-LINK's 8 MHz HSE bypass via PLL3 -> pll3_q_ck, leaving
+ * sys_ck untouched on HSI. See usbh.c and RCC defines below. */
 
 /* ------------------------- Cortex-M7 core (PM0253) ------------------------ */
 #define SCB_ICSR        REG32(0xE000ED04u)
@@ -62,12 +96,69 @@
 #define   DWT_CTRL_CYCCNTENA (1u << 0)
 #define DWT_CYCCNT      REG32(0xE0001004u)  /* free-running cycle counter */
 
+/* ------------------------------ FLASH (RM0399 §4) ------------------------- */
+#define FLASH_BASE_REG  0x52002000u
+#define FLASH_ACR       REG32(FLASH_BASE_REG + 0x000u)  /* latency + WRHIGHFREQ */
+#define   FLASH_ACR_LATENCY_MASK   0xFu
+#define   FLASH_ACR_WRHIGHFREQ_MASK (3u << 4)
+
 /* ------------------------------ RCC (RM0399 §8) --------------------------- */
 #define RCC_BASE        0x58024400u
+#define RCC_CR          REG32(RCC_BASE + 0x000u)  /* RM0399 PDF pp.415-416 */
+#define   RCC_CR_HSEON      (1u << 16)
+#define   RCC_CR_HSERDY     (1u << 17)
+#define   RCC_CR_HSEBYP     (1u << 18)   /* write only while HSE is off       */
+#define   RCC_CR_PLL3ON     (1u << 28)
+#define   RCC_CR_PLL3RDY    (1u << 29)
+#define   RCC_CR_PLL1ON     (1u << 24)
+#define   RCC_CR_PLL1RDY    (1u << 25)
+#define RCC_CFGR        REG32(RCC_BASE + 0x010u)  /* p.419: SW / SWS          */
+#define   CFGR_SW_MASK      7u
+#define   CFGR_SW_PLL1      3u
+#define   CFGR_SWS_SHIFT    3u
+#define   CFGR_SWS_MASK     (7u << 3)
+#define RCC_D1CFGR      REG32(RCC_BASE + 0x018u)  /* p.423: HPRE/D1PPRE/D1CPRE*/
+#define   D1CFGR_HPRE_DIV2  8u           /* [3:0]  1000 = /2                  */
+#define   D1CFGR_D1PPRE_DIV2 (4u << 4)   /* [6:4]  100  = /2                  */
+#define   D1CFGR_D1CPRE_DIV1 (0u << 8)   /* [11:8] 0xxx = /1                  */
+#define RCC_D2CFGR      REG32(RCC_BASE + 0x01Cu)  /* p.425: D2PPRE1/2         */
+#define   D2CFGR_D2PPRE1_DIV2 (4u << 4)
+#define   D2CFGR_D2PPRE2_DIV2 (4u << 8)
+#define RCC_D3CFGR      REG32(RCC_BASE + 0x020u)  /* p.426: D3PPRE            */
+#define   D3CFGR_D3PPRE_DIV2  (4u << 4)
+#define RCC_PLLCKSELR   REG32(RCC_BASE + 0x028u)  /* p.429: PLLSRC + DIVM1..3 */
+#define   PLLCKSELR_DIVM1_SHIFT  4u      /* [9:4] direct: 1 = /1              */
+#define   PLLCKSELR_DIVM1_MASK   (0x3Fu << 4)
+#define   PLLCKSELR_PLLSRC_MASK  3u      /* [1:0] 00 HSI, 10 HSE — shared by
+                                          * ALL three PLLs, write with PLLs off */
+#define   PLLCKSELR_PLLSRC_HSE   2u
+#define   PLLCKSELR_DIVM3_SHIFT  20u     /* [25:20] direct: 5 = /5            */
+#define   PLLCKSELR_DIVM3_MASK   (0x3Fu << 20)
+#define RCC_PLLCFGR     REG32(RCC_BASE + 0x02Cu)  /* pp.430-432 */
+#define   PLLCFGR_PLL3FRACEN (1u << 8)
+#define   PLLCFGR_PLL3VCOSEL (1u << 9)   /* 1 = medium VCO 150-420 MHz —
+                                          * MANDATORY for ref <= 2 MHz (p.373) */
+#define   PLLCFGR_PLL3RGE_MASK (3u << 10) /* 00 = ref 1-2 MHz                 */
+#define   PLLCFGR_DIVQ3EN    (1u << 23)
+#define   PLLCFGR_PLL1FRACEN (1u << 0)
+#define   PLLCFGR_PLL1VCOSEL (1u << 1)   /* 0 = wide VCO 192-836 MHz          */
+#define   PLLCFGR_PLL1RGE_MASK (3u << 2)
+#define   PLLCFGR_PLL1RGE_8_16 (3u << 2) /* ref is 8 MHz with DIVM1 = /1      */
+#define   PLLCFGR_DIVP1EN    (1u << 16)
+#define RCC_PLL1DIVR    REG32(RCC_BASE + 0x030u)  /* pp.436-437: stored = N-1,
+                                                   * div-1 for P/Q/R          */
+#define RCC_PLL3DIVR    REG32(RCC_BASE + 0x040u)  /* pp.440-441: stored = N-1,
+                                                   * div-1 for P/Q/R          */
+#define RCC_D2CCIP2R    REG32(RCC_BASE + 0x054u)  /* p.447 */
+#define   D2CCIP2R_USBSEL_MASK  (3u << 20) /* 00 off, 01 pll1_q, 10 pll3_q,
+                                            * 11 hsi48                        */
+#define   D2CCIP2R_USBSEL_PLL3Q (2u << 20)
 #define RCC_AHB1ENR     REG32(RCC_BASE + 0x0D8u)  /* RM0399 PDF p.487 */
 #define   AHB1ENR_ETH1MACEN (1u << 15)
 #define   AHB1ENR_ETH1TXEN  (1u << 16)
 #define   AHB1ENR_ETH1RXEN  (1u << 17)
+#define   AHB1ENR_USB2OTGEN (1u << 27)   /* USB2 = OTG_HS2, the FS-only
+                                          * instance on PA11/PA12 (p.487)     */
 #define RCC_AHB4ENR     REG32(RCC_BASE + 0x0E0u)
 #define   AHB4ENR_GPIOAEN (1u << 0)
 #define   AHB4ENR_GPIOBEN (1u << 1)
@@ -79,6 +170,40 @@
 #define   APB1LENR_USART3EN (1u << 18)
 #define RCC_APB4ENR     REG32(RCC_BASE + 0x0F4u)
 #define   APB4ENR_SYSCFGEN  (1u << 1)
+
+/* ---------------------------- DBGMCU (RM0399 §60) ------------------------- */
+/* Keep the D1/D3 debug clocks alive and debugging possible through sleep:
+ * without these, halting a RUNNING target times out the moment the domain
+ * gates its clock, and a debugger can only get in via connect-under-reset
+ * (the Makefile's connect_assert_srst dance). Set once in system_init. */
+#define DBGMCU_IDC      REG32(0x5C001000u)  /* [11:0] DEV_ID, [31:16] REV_ID */
+#define DBGMCU_CR       REG32(0x5C001004u)
+#define   DBGMCU_CR_DBGSLPD1  (1u << 0)
+#define   DBGMCU_CR_DBGSTPD1  (1u << 1)
+#define   DBGMCU_CR_D1DBGCKEN (1u << 21)
+#define   DBGMCU_CR_D3DBGCKEN (1u << 22)
+
+/* ------------------------------ PWR (RM0399 §7) --------------------------- */
+/* VDD33USB is hard-wired to 3.3 V on the Nucleo (SB19), so only the level
+ * detector needs enabling — NOT the internal USB regulator. §7.4.7 p.285:
+ * set USB33DEN, then poll USB33RDY before touching the USB transceivers;
+ * skipping this leaves the PHY dead with no error anywhere. */
+#define PWR_CSR1        REG32(0x58024800u + 0x004u)  /* ACTVOSRDY etc        */
+#define   PWR_CSR1_ACTVOSRDY (1u << 13)  /* the SUPPLY is settled; VOS will
+                                          * not take effect before this      */
+#define PWR_D3CR        REG32(0x58024800u + 0x018u)  /* voltage scaling      */
+#define   PWR_D3CR_VOS_MASK  (3u << 14)  /* 11 = Scale 1, the highest without
+                                          * the SYSCFG overdrive              */
+#define   PWR_D3CR_VOS_SCALE1 (3u << 14)
+#define   PWR_D3CR_VOSRDY    (1u << 13)
+#define PWR_CR3         REG32(0x58024800u + 0x00Cu)  /* pp.329-330 */
+#define   PWR_CR3_BYPASS    (1u << 0)
+#define   PWR_CR3_LDOEN     (1u << 1)
+#define   PWR_CR3_SDEN      (1u << 2)   /* the SMPS step-down               */
+#define   PWR_CR3_SUPPLY_MASK (PWR_CR3_BYPASS | PWR_CR3_LDOEN | PWR_CR3_SDEN)
+#define   PWR_CR3_USB33DEN  (1u << 24)
+#define   PWR_CR3_USBREGEN  (1u << 25)
+#define   PWR_CR3_USB33RDY  (1u << 26)   /* read-only */
 
 /* ----------------------------- GPIO (RM0399 §12) -------------------------- */
 typedef struct {
@@ -148,6 +273,8 @@ typedef struct {
 /* Peripheral mode config: EPIS[2:0] picks the Ethernet PHY interface.
  * RM0399 §13.3.1, PDF p.586. 000 = MII, 100 = RMII, all else reserved. */
 #define SYSCFG_PMCR     REG32(SYSCFG_BASE + 0x04u)
+#define SYSCFG_PWRCR    REG32(SYSCFG_BASE + 0x18u)  /* ODEN: the VOS0 overdrive */
+#define   SYSCFG_PWRCR_ODEN  (1u << 0)
 #define   PMCR_EPIS_SHIFT   21u
 #define   PMCR_EPIS_MASK    (7u << 21)
 
@@ -236,6 +363,7 @@ typedef struct {
 #define IRQ_ETH         61   /* board DTS: interrupts = <0x3d 0x0> */
 #define IRQ_USART3      39
 #define IRQ_EXTI15_10   40
+#define IRQ_OTG_FS      101  /* USB2 global interrupt, RM0399 Table 149 p.794 */
 
 /* ------------------------------- intrinsics ------------------------------- */
 static inline void barrier_dsb(void) { __asm volatile("dsb 0xF" ::: "memory"); }

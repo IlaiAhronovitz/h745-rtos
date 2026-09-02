@@ -1,21 +1,25 @@
 # h745-rtos — minimal preemptive RTOS kernel for STM32H745 (Cortex-M7), bare metal.
 # No HAL, no CMSIS, no libc: startup, linker script, drivers and kernel are all in-tree.
 #
-# Machine-specific paths (this PC):
-#   - ARM GNU toolchain 14.2 (not on PATH)
-#   - xPack OpenOCD 0.12 (ST-Link; serial pinned — two ST-Links exist on this PC)
+# Machine-specific paths (override on the command line or in the environment):
+#   - ARM GNU toolchain 14.2 (GCC_BIN)
+#   - xPack OpenOCD 0.12 (OCD_ROOT)
 
-GCC_BIN := C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin
+GCC_BIN ?= C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin
 CC      := "$(GCC_BIN)/arm-none-eabi-gcc.exe"
 OBJDUMP := "$(GCC_BIN)/arm-none-eabi-objdump.exe"
 SIZE    := "$(GCC_BIN)/arm-none-eabi-size.exe"
 
-OCD_ROOT := C:/Users/ghkh1/AppData/Local/Microsoft/WinGet/Packages/xpack-dev-tools.openocd-xpack_Microsoft.Winget.Source_8wekyb3d8bbwe/xpack-openocd-0.12.0-7
+OCD_ROOT ?= $(LOCALAPPDATA)/Microsoft/WinGet/Packages/xpack-dev-tools.openocd-xpack_Microsoft.Winget.Source_8wekyb3d8bbwe/xpack-openocd-0.12.0-7
 OPENOCD  := $(OCD_ROOT)/bin/openocd.exe
 OCD_SCR  := $(OCD_ROOT)/openocd/scripts
-# On-board ST-Link V3 of the Nucleo-H745ZI-Q. Never flash without pinning the
-# serial: a second ST-Link (the STM32L452 board) is often attached to this PC.
-STLINK_SERIAL := 002300373331511434333834
+# Pin the Nucleo's on-board ST-Link when more than one probe is attached:
+#   make flash STLINK_SERIAL=<serial>      (list probes: openocd -c "adapter list")
+# Left empty, OpenOCD uses the first ST-Link it finds.
+STLINK_SERIAL ?=
+ifneq ($(strip $(STLINK_SERIAL)),)
+OCD_SERIAL := -c "adapter serial $(STLINK_SERIAL)"
+endif
 
 # connect_assert_srst is mandatory here: the idle task sits in WFI, the D1 domain
 # gates the debug clock, and a normal attach reads a garbage CPUID (0xa05f0000)
@@ -23,7 +27,7 @@ STLINK_SERIAL := 002300373331511434333834
 # reaches WFI. (RM0399 §60.3 DBGMCU; the alternative is setting DBGMCU_CR
 # D1DBGCKEN/DBGSLPD1 in firmware, which only helps once firmware already runs.)
 OCD := "$(OPENOCD)" -s "$(OCD_SCR)" -f interface/stlink.cfg \
-       -c "adapter serial $(STLINK_SERIAL)" \
+       $(OCD_SERIAL) \
        -c "reset_config srst_only srst_nogate connect_assert_srst" \
        -f target/stm32h7x.cfg
 
@@ -35,6 +39,9 @@ ARCH := -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 CFLAGS := $(ARCH) -O2 -g3 -std=c11 -Wall -Wextra -Werror \
           -ffreestanding -ffunction-sections -fdata-sections \
           -Isrc -Isrc/kernel -MMD -MP
+# Build-time parameters (APN, test call number, ...) go in CFLAGS_EXTRA, e.g.
+#   make APP=modem CFLAGS_EXTRA='-DDATA_APN=\"<apn>\"'
+CFLAGS += $(CFLAGS_EXTRA)
 ASFLAGS := $(ARCH) -g3
 LDFLAGS := -T linker/stm32h745_cm7.ld -nostartfiles -nostdlib \
            -Wl,--gc-sections -Wl,-Map=$(BUILD)/kernel.map

@@ -13,7 +13,9 @@
 #include <stdint.h>
 
 /* ---- configuration ------------------------------------------------------ */
-#define K_CPU_HZ          64000000u
+/* The CPU clock is g_cpu_hz (stm32h745.h), set at boot by clock_init().
+ * It used to be duplicated here; two copies of the same number is how a
+ * scheduler ends up ticking at the wrong rate. */
 #define K_TICK_HZ         1000u
 #define K_MAX_PRIOS       8u
 #define K_IDLE_PRIO       (K_MAX_PRIOS - 1u)

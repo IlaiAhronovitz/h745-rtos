@@ -16,3 +16,34 @@ void *memcpy(void *dst, const void *src, size_t n)
     while (n--) *p++ = *q++;
     return dst;
 }
+
+size_t strlen(const char *s)
+{
+    const char *p = s;
+    while (*p) p++;
+    return (size_t)(p - s);
+}
+
+int strcmp(const char *a, const char *b)
+{
+    while (*a && *a == *b) { a++; b++; }
+    return (unsigned char)*a - (unsigned char)*b;
+}
+
+char *strncpy(char *dst, const char *src, size_t n)
+{
+    char *p = dst;
+    while (n && *src) { *p++ = *src++; n--; }
+    while (n--) *p++ = 0;
+    return dst;
+}
+
+int memcmp(const void *a, const void *b, size_t n)
+{
+    const unsigned char *p = a, *q = b;
+    while (n--) {
+        if (*p != *q) return (int)*p - (int)*q;
+        p++; q++;
+    }
+    return 0;
+}

@@ -1,8 +1,8 @@
 # Bench runbook — hardware validation session
 
 Preconditions: Nucleo-H745ZI-Q on USB (CN1), Windows enumerated it.
-Two ST-Links may exist on this PC — the Makefile pins serial
-`002300373331511434333834` (the Nucleo's on-board ST-Link V3).
+If more than one ST-Link is attached, pin the Nucleo's on-board ST-Link V3:
+`make flash STLINK_SERIAL=<serial>` (or set `STLINK_SERIAL` in the environment).
 
 All `make` invocations need msys tools first:
 `$env:PATH = "C:\msys64\usr\bin;$env:PATH"`
@@ -13,7 +13,7 @@ All `make` invocations need msys tools first:
 [System.IO.Ports.SerialPort]::GetPortNames()
 ```
 
-Historically COM44 on this PC. If different, pass `--port COMxx` below.
+Windows assigns the number and it moves between sessions; pass it as `--port COMxx` below.
 
 ## 1. One-time: park the CM4
 
@@ -29,7 +29,7 @@ flash bank 2 keeps driving the LEDs underneath the kernel.
 Start the monitor FIRST (background), then flash:
 
 ```powershell
-python tools\monitor.py --port COM44 --seconds 25 --log logs\demo-boot.txt   # background
+python tools\monitor.py --port COMxx --seconds 25 --log logs\demo-boot.txt   # background
 make flash
 ```
 
@@ -45,7 +45,7 @@ Expected within a few seconds of reset:
 
 ```powershell
 make APP=test BUILD=build-test flash
-python tools\monitor.py --port COM44 --seconds 30 --log logs\validation.txt
+python tools\monitor.py --port COMxx --seconds 30 --log logs\validation.txt
 ```
 
 (Or monitor first, then flash — the suite runs in ~8 s from reset.)

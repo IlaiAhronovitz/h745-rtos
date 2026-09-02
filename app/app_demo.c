@@ -4,9 +4,10 @@
  *                    ISR→task wake latency is printed in cycles/µs
  *   prio 2  green    LD1 heartbeat, 2 Hz          (k_sleep_ms)
  *   prio 2  yellow   LD2, 1 Hz                    (k_sleep_ms)
+ *   prio 3  stats    every 5 s: per-task state, stack high-water, switches
+ *                    (outranks the fpu load — a lower-prio observer starves)
  *   prio 4  fpu-a/b  continuous float chains that verify S16-S31 survive
  *                    preemption (lazy FP stacking) — busy, timesliced RR
- *   prio 5  stats    every 5 s: per-task state, stack high-water, switches
  *   prio 7  idle     wfi
  */
 #include "stm32h745.h"
@@ -47,7 +48,7 @@ void EXTI15_10_IRQHandler(void)
 {
     board_button_clear_irq();
     uint32_t now = DWT_CYCCNT;
-    if (now - btn_last < 20u * (K_CPU_HZ / 1000u)) return;   /* 20 ms debounce */
+    if (now - btn_last < 20u * (g_cpu_hz / 1000u)) return;   /* 20 ms debounce */
     btn_last = now;
     btn_t0 = now;
     k_sem_give(&btn_sem);                /* wakes 'btn' (prio 1) -> preempts */
@@ -62,7 +63,7 @@ static void btn_body(void *arg)
         uint32_t lat = DWT_CYCCNT - btn_t0;
         board_led_toggle(LED_RED);
         say("[btn] press %lu: ISR->task wake in %lu cycles = %lu us\n",
-            ++n, lat, lat / (K_CPU_HZ / 1000000u));
+            ++n, lat, lat / (g_cpu_hz / 1000000u));
     }
 }
 
@@ -146,7 +147,7 @@ int main(void)
 
     kprintf("\n=== h745-rtos ===\n");
     kprintf("preemptive kernel on CM7 @ %u MHz | tick %u Hz | press B1 for the semaphore demo\n",
-            SYS_CLK_HZ / 1000000u, (unsigned)K_TICK_HZ);
+            (unsigned)(SYS_CLK_HZ / 1000000u), (unsigned)K_TICK_HZ);
 
     k_sem_init(&print_lock, 1);
     k_sem_init(&btn_sem, 0);
@@ -157,7 +158,10 @@ int main(void)
     k_task_create(&t_yellow, "yello", yellow_body, 0,           2, s_yellow, STACK_WORDS);
     k_task_create(&t_fpu_a,  "fpu-a", fpu_body,    (void *)0u,  4, s_fpu_a,  STACK_WORDS);
     k_task_create(&t_fpu_b,  "fpu-b", fpu_body,    (void *)1u,  4, s_fpu_b,  STACK_WORDS);
-    k_task_create(&t_stats,  "stats", stats_body,  0,           5, s_stats,  STACK_WORDS);
+    /* stats sits ABOVE the fpu pair. Each fpu task sleeps only 1 ms per
+     * ~15 ms round, so a lower-priority observer runs only when both happen
+     * to sleep at once -- measured on hardware: two characters in 20 s. */
+    k_task_create(&t_stats,  "stats", stats_body,  0,           3, s_stats,  STACK_WORDS);
 
     k_start();                           /* never returns */
 }

@@ -6,3 +6,15 @@ logs/
 docs/refs/*.pdf
 __pycache__/
 *.pyc
+
+# Host-test build output and the compiled test binaries
+build-test/
+tests/host/build/
+tests/host/test_m1
+tests/host/test_m2
+tests/host/test_m3
+tests/host/test_m4
+
+# Third-party / vendor-downloaded artifacts, reproducible from their source
+tests/host/gef.py
+.vscode/*.svd

@@ -17,7 +17,9 @@ void uart_init(uint32_t baud)
     GPIOD->AFR[1] = (GPIOD->AFR[1] & ~((0xFu << 0) | (0xFu << 4)))
                                    |  ((7u  << 0) | (7u  << 4));
 
-    USART3->BRR = (SYS_CLK_HZ + baud / 2u) / baud;
+    /* USART3 is on D2 APB1, which is NOT the CPU clock once the
+     * prescalers stop being /1. */
+    USART3->BRR = (g_apb1_hz + baud / 2u) / baud;
     USART3->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
 }
 

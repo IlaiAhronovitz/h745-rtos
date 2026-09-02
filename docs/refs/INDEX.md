@@ -139,7 +139,7 @@ Block-diagram overview. Read this before the 200-page chapter, not instead of it
 |---|---|
 | CMSIS device header — all `ETH_*` bit positions and masks | `C:/ncs/v3.3.0/modules/hal/stm32/stm32cube/stm32h7xx/soc/stm32h745xx.h` |
 | ST HAL Ethernet driver | `C:/ncs/v3.3.0/modules/hal/stm32/stm32cube/stm32h7xx/drivers/src/stm32h7xx_hal_eth.c` |
-| Zephyr board DTS (verified pin map) | `C:/Users/ghkh1/mcu-eth-rx/build/zephyr/zephyr.dts` |
+| Zephyr board DTS (verified pin map) | a Zephyr build of `nucleo_h745zi_q/stm32h745xx/m7` (`build/zephyr/zephyr.dts`) |
 
 The CMSIS header gives bit *positions* for free. It does not give the CR field's
 *semantics* — which encoding covers which HCLK range is RM0399 §61.11, p.3151

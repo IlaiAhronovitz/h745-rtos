@@ -12,7 +12,7 @@
 #include "kernel.h"
 #include "sem.h"
 
-#define US(cyc) ((cyc) / (K_CPU_HZ / 1000000u))
+#define US(cyc) ((cyc) / (g_cpu_hz / 1000000u))
 
 static k_task_t t_run;
 static uint32_t s_run[512] __attribute__((aligned(8)));
@@ -42,7 +42,8 @@ static void t1_switch_cost(void)
     }
     uint32_t avg = sum / (uint32_t)N;
     kprintf("  T1 yield round trip: min=%lu avg=%lu max=%lu cycles"
-            " (avg %lu us @64 MHz)\n", lo, avg, hi, US(avg));
+            " (avg %lu us @ %lu MHz)\n", lo, avg, hi, US(avg),
+            (unsigned long)(g_cpu_hz / 1000000u));
     verdict("T1 context-switch cost", avg < 2000, "avg under 2000 cycles");
 }
 
@@ -171,7 +172,7 @@ static void t5_sleep_accuracy(void)
     for (int i = 0; i < 20; i++) {
         uint32_t t0 = DWT_CYCCNT;
         k_sleep_ms(50);
-        uint32_t ms = (DWT_CYCCNT - t0) / (K_CPU_HZ / 1000u);
+        uint32_t ms = (DWT_CYCCNT - t0) / (g_cpu_hz / 1000u);
         if (ms < lo) lo = ms;
         if (ms > hi) hi = ms;
         if (ms < 49 || ms > 53) ok = 0;
